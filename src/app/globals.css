@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #2563eb;
+  --secondary: #1e40af;
+  --accent: #3b82f6;
+  --background: #f8fafc;
+  --text: #1e293b;
+  --success: #22c55e;
+  --warning: #eab308;
+  --error: #ef4444;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-text;
+  }
+  h1 {
+    @apply text-4xl font-bold;
+  }
+  h2 {
+    @apply text-3xl font-bold;
+  }
+  h3 {
+    @apply text-2xl font-bold;
+  }
+}

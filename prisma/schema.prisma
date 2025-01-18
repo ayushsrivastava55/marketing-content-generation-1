@@ -1,0 +1,31 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model CompanyProfile {
+  id                    String   @id @default(cuid())
+  userEmail            String   @unique
+  name                 String?
+  size                 String?
+  industry             String?
+  technologyStack      String?  // Stored as JSON string
+  targetMarket         String?  // Stored as JSON string
+  geographicPresence   String?  // Stored as JSON string
+  serviceOfferings     String?  // Stored as JSON string
+  businessChallenges   String?  // Stored as JSON string
+  innovationPriorities String?  // Stored as JSON string
+  budgetRange          String?
+  implementationTimeline String?
+  complianceRequirements String? // Stored as JSON string
+  teamExpertise        String?  // Stored as JSON string
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
