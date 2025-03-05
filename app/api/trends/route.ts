@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { generateTrends } from '@/lib/gemini'
+import { openaiService } from '@/services/openaiService'
 
-// Fallback trends data in case Gemini API fails
+// Fallback trends data in case OpenAI fails
 const fallbackTrends = [
   {
     technology: 'Large Language Models (LLMs)',
@@ -50,26 +50,46 @@ const fallbackTrends = [
 
 export async function GET(request: Request) {
   try {
-    // Try to get trends from Gemini API
-    let trends = await generateTrends()
+    console.log('Starting trends fetch...');
+    const trends = await openaiService.generateTrends();
     
-    // If Gemini fails, use fallback data
-    if (!trends) {
-      console.log('Using fallback trends data')
-      trends = fallbackTrends
+    if (!trends || trends.length === 0) {
+      console.log('No trends generated, using fallback data');
+      return NextResponse.json({
+        success: true,
+        data: {
+          trends: fallbackTrends,
+          source: 'fallback'
+        }
+      });
     }
 
+    console.log(`Successfully generated ${trends.length} new trends`);
     return NextResponse.json({
       success: true,
       data: {
-        trends
+        trends,
+        source: 'openai',
+        generated: new Date().toISOString()
       }
-    })
+    });
+
   } catch (error) {
-    console.error('Error in trends API:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch trends' },
-      { status: 500 }
-    )
+    console.error('Error in trends API:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+    }
+    
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch trends',
+      data: {
+        trends: fallbackTrends,
+        source: 'fallback',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }, {
+      status: 500
+    });
   }
 }

@@ -1,35 +1,37 @@
 import { NextResponse } from 'next/server'
-import { geminiService } from '@/services/geminiService'
+import { openaiService } from '@/services/openaiService'
+import prisma from '@/lib/prisma'
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { trend, context, industry, format } = body
+    const { trend, context, format, industry, requirements } = await request.json()
 
-    if (!trend) {
-      return new NextResponse(JSON.stringify({ error: 'Trend is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    const content = await geminiService.generateContent({
+    // Optional: Get company profile for additional context
+    const profile = await prisma.companyProfile.findFirst()
+    
+    const contentRequest = {
       trend,
       context,
-      industry,
-      format: format || 'summary'
-    })
+      format: format || 'json',
+      industry: industry || profile?.industry || 'Technology',
+      requirements,
+      companyContext: profile ? {
+        size: profile.size,
+        techStack: JSON.parse(profile.technologyStack),
+        expertise: JSON.parse(profile.teamExpertise),
+        challenges: JSON.parse(profile.businessChallenges)
+      } : undefined
+    }
 
-    return new NextResponse(JSON.stringify(content), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    const content = await openaiService.generateContent(contentRequest)
+    return NextResponse.json(content)
+
   } catch (error) {
-    console.error('Error in content generation API:', error)
-    return new NextResponse(JSON.stringify({ error: 'Internal Server Error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    console.error('Content generation error:', error)
+    return NextResponse.json(
+      { error: 'Failed to generate content' },
+      { status: 500 }
+    )
   }
 }
 
@@ -45,7 +47,7 @@ export async function PUT(request: Request) {
       })
     }
 
-    const analysis = await geminiService.analyzeTrends(trends)
+    const analysis = await openaiService.analyzeTrends(trends)
 
     return new NextResponse(JSON.stringify(analysis), {
       status: 200,

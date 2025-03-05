@@ -1,6 +1,4 @@
-import axios from 'axios'
-import * as cheerio from 'cheerio'
-import { geminiService } from './geminiService'
+import { openaiService } from './openaiService'
 import { marked } from 'marked'
 
 interface CompanyAdoption {
@@ -157,7 +155,7 @@ class ContentGenerator {
   private async generateTechnologyTrend(category: string, profile?: CompanyProfile): Promise<TrendContent> {
     try {
       const operation = async () => {
-        const response = await geminiService.generateContent({
+        const response = await openaiService.generateContent({
           trend: category,
           context: profile ? `
             Company Context:
@@ -234,7 +232,7 @@ class ContentGenerator {
 
     try {
       const operation = async () => {
-        const response = await geminiService.generateContent({
+        const response = await openaiService.generateContent({
           trend: trend.technology,
           context: `Strategic Benefits and Use Cases of ${trend.technology} in ${trend.category}`,
           format: 'text',
@@ -404,7 +402,7 @@ class ContentGenerator {
         Format the response in JSON with headline, body, and cta fields.
       `
 
-      const response = await geminiService.generateContent({
+      const response = await openaiService.generateContent({
         trend: trend.technology,
         context: `${trend.category} - Blog Content Generation`,
         format: 'json',
@@ -422,7 +420,7 @@ class ContentGenerator {
             lastUpdated: new Date().toISOString()
           }
         } catch (parseError) {
-          console.error('Error parsing Gemini response:', parseError)
+          console.error('Error parsing OpenAI response:', parseError)
           return this.getFallbackBlogPost(trend)
         }
       }
@@ -464,7 +462,7 @@ class ContentGenerator {
   }
 
   private async generateBlogForTechnology(trend: string): Promise<TechnologyBlog> {
-    const response = await geminiService.generateContent({
+    const response = await openaiService.generateContent({
       trend,
       context: 'Generate a detailed technical blog post with implementation examples',
       format: 'json',

@@ -11,10 +11,16 @@ datasource db {
 }
 
 model CompanyProfile {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  industry  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  name                  String
+  industry             String
+  size                 String
+  technologyStack      String   // Will store JSON string
+  teamExpertise        String   // Will store JSON string
+  businessChallenges   String   // Will store JSON string
+  innovationPriorities String   // Will store JSON string
+  implementationTimeline String
+  budgetRange          String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }

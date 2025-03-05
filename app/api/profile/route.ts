@@ -1,30 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import prisma from '@/lib/prisma'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const profile = await prisma.companyProfile.findUnique({
-      where: {
-        userEmail: 'default@example.com' // Replace with a default email or remove this condition
-      }
-    })
-
+    const profile = await prisma.companyProfile.findFirst()
+    
     if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+      return NextResponse.json(null, { status: 404 })
     }
 
-    // Parse JSON strings back to arrays
-    return NextResponse.json({
-      ...profile,
-      technologyStack: JSON.parse(profile.technologyStack),
-      targetMarket: JSON.parse(profile.targetMarket),
-      geographicPresence: JSON.parse(profile.geographicPresence),
-      serviceOfferings: JSON.parse(profile.serviceOfferings),
-      businessChallenges: JSON.parse(profile.businessChallenges),
-      innovationPriorities: JSON.parse(profile.innovationPriorities),
-      complianceRequirements: JSON.parse(profile.complianceRequirements),
-      teamExpertise: JSON.parse(profile.teamExpertise)
-    })
+    return NextResponse.json(profile)
   } catch (error) {
     console.error('Error fetching profile:', error)
     return NextResponse.json(
@@ -34,37 +19,32 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const data = await req.json()
+    const data = await request.json()
     
-    // Convert arrays to JSON strings
+    // Convert arrays to JSON strings before saving
     const profile = await prisma.companyProfile.upsert({
       where: {
-        userEmail: 'default@example.com' // Replace with a default email or remove this condition
+        id: data.id || 'default'
       },
       update: {
         ...data,
         technologyStack: JSON.stringify(data.technologyStack),
-        targetMarket: JSON.stringify(data.targetMarket),
-        geographicPresence: JSON.stringify(data.geographicPresence),
-        serviceOfferings: JSON.stringify(data.serviceOfferings),
+        teamExpertise: JSON.stringify(data.teamExpertise),
         businessChallenges: JSON.stringify(data.businessChallenges),
         innovationPriorities: JSON.stringify(data.innovationPriorities),
-        complianceRequirements: JSON.stringify(data.complianceRequirements),
-        teamExpertise: JSON.stringify(data.teamExpertise)
+        updatedAt: new Date()
       },
       create: {
-        userEmail: 'default@example.com', // Replace with a default email or remove this condition
+        id: 'default',
         ...data,
         technologyStack: JSON.stringify(data.technologyStack),
-        targetMarket: JSON.stringify(data.targetMarket),
-        geographicPresence: JSON.stringify(data.geographicPresence),
-        serviceOfferings: JSON.stringify(data.serviceOfferings),
+        teamExpertise: JSON.stringify(data.teamExpertise),
         businessChallenges: JSON.stringify(data.businessChallenges),
         innovationPriorities: JSON.stringify(data.innovationPriorities),
-        complianceRequirements: JSON.stringify(data.complianceRequirements),
-        teamExpertise: JSON.stringify(data.teamExpertise)
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     })
 
