@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PlusIcon, ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, ChevronDownIcon, ChevronRightIcon, XMarkIcon, PencilIcon } from '@heroicons/react/24/outline'
 
 interface Task {
   id: string
@@ -95,6 +95,19 @@ export default function TimelinePage() {
 
   const [showAddTask, setShowAddTask] = useState(false)
   const [selectedMilestone, setSelectedMilestone] = useState<string | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
+  const [newTask, setNewTask] = useState<Partial<Task>>({
+    name: '',
+    status: 'pending',
+    startDate: '',
+    endDate: '',
+    assignee: '',
+    dependencies: [],
+    description: '',
+    progress: 0
+  })
+  const [availableDependencies, setAvailableDependencies] = useState<{id: string, name: string}[]>([])
 
   const toggleMilestone = (id: string) => {
     setMilestones(prev => prev.map(m => 
@@ -116,18 +129,174 @@ export default function TimelinePage() {
     return days > 0 ? `${days} days remaining` : 'Overdue'
   }
 
+  const handleAddTaskClick = (milestoneId: string) => {
+    setIsEditMode(false)
+    setEditingTaskId(null)
+    setSelectedMilestone(milestoneId)
+    
+    // Get available dependencies from all tasks
+    const allTasks: {id: string, name: string}[] = []
+    milestones.forEach(milestone => {
+      milestone.tasks.forEach(task => {
+        allTasks.push({ id: task.id, name: task.name })
+      })
+    })
+    setAvailableDependencies(allTasks)
+    
+    // Set default dates based on selected milestone
+    const milestone = milestones.find(m => m.id === milestoneId)
+    if (milestone) {
+      setNewTask({
+        name: '',
+        status: 'pending',
+        startDate: milestone.startDate,
+        endDate: milestone.endDate,
+        assignee: '',
+        dependencies: [],
+        description: '',
+        progress: 0
+      })
+    }
+    
+    setShowAddTask(true)
+  }
+  
+  const handleEditTask = (milestoneId: string, taskId: string) => {
+    setIsEditMode(true)
+    setEditingTaskId(taskId)
+    setSelectedMilestone(milestoneId)
+
+    // Find the task to edit
+    const milestone = milestones.find(m => m.id === milestoneId)
+    const taskToEdit = milestone?.tasks.find(t => t.id === taskId)
+
+    if (taskToEdit) {
+      // Set form with task data
+      setNewTask({
+        name: taskToEdit.name,
+        status: taskToEdit.status,
+        startDate: taskToEdit.startDate,
+        endDate: taskToEdit.endDate,
+        assignee: taskToEdit.assignee,
+        dependencies: taskToEdit.dependencies,
+        description: taskToEdit.description,
+        progress: taskToEdit.progress
+      })
+
+      // Get available dependencies excluding the current task
+      const allTasks: {id: string, name: string}[] = []
+      milestones.forEach(milestone => {
+        milestone.tasks.forEach(task => {
+          if (task.id !== taskId) {
+            allTasks.push({ id: task.id, name: task.name })
+          }
+        })
+      })
+      setAvailableDependencies(allTasks)
+      
+      setShowAddTask(true)
+    }
+  }
+  
+  const handleTaskInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setNewTask(prev => ({ ...prev, [name]: value }))
+  }
+  
+  const handleDependencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = Array.from(e.target.selectedOptions, option => option.value)
+    setNewTask(prev => ({ ...prev, dependencies: selected }))
+  }
+  
+  const resetForm = () => {
+    setNewTask({
+      name: '',
+      status: 'pending',
+      startDate: '',
+      endDate: '',
+      assignee: '',
+      dependencies: [],
+      description: '',
+      progress: 0
+    })
+    setSelectedMilestone(null)
+    setIsEditMode(false)
+    setEditingTaskId(null)
+    setShowAddTask(false)
+  }
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!selectedMilestone || !newTask.name || !newTask.startDate || !newTask.endDate) {
+      alert('Please fill in all required fields')
+      return
+    }
+    
+    // Update or add task based on mode
+    const updatedMilestones = milestones.map(milestone => {
+      if (milestone.id === selectedMilestone) {
+        let updatedTasks: Task[] = []
+        
+        if (isEditMode && editingTaskId) {
+          // Update existing task
+          updatedTasks = milestone.tasks.map(task => {
+            if (task.id === editingTaskId) {
+              return {
+                ...task,
+                name: newTask.name || task.name,
+                status: (newTask.status as Task['status']) || task.status,
+                startDate: newTask.startDate || task.startDate,
+                endDate: newTask.endDate || task.endDate,
+                assignee: newTask.assignee || task.assignee,
+                dependencies: newTask.dependencies || task.dependencies,
+                description: newTask.description || task.description,
+                progress: Number(newTask.progress) || task.progress
+              }
+            }
+            return task
+          })
+        } else {
+          // Add new task
+          const newTaskId = `${milestone.id}-${milestone.tasks.length + 1}`
+          updatedTasks = [
+            ...milestone.tasks,
+            {
+              id: newTaskId,
+              name: newTask.name || '',
+              status: (newTask.status as Task['status']) || 'pending',
+              startDate: newTask.startDate || '',
+              endDate: newTask.endDate || '',
+              assignee: newTask.assignee || '',
+              dependencies: newTask.dependencies || [],
+              description: newTask.description || '',
+              progress: Number(newTask.progress) || 0
+            }
+          ]
+        }
+        
+        // Recalculate milestone progress based on tasks
+        const totalProgress = updatedTasks.reduce((sum, task) => sum + task.progress, 0)
+        const averageProgress = Math.round(totalProgress / updatedTasks.length)
+        
+        return {
+          ...milestone,
+          tasks: updatedTasks,
+          progress: averageProgress
+        }
+      }
+      return milestone
+    })
+    
+    setMilestones(updatedMilestones)
+    resetForm()
+  }
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Migration Timeline</h1>
-          <button
-            onClick={() => setShowAddTask(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
-          >
-            <PlusIcon className="w-5 h-5" />
-            Add Task
-          </button>
         </div>
 
         {/* Timeline Overview */}
@@ -165,6 +334,13 @@ export default function TimelinePage() {
                         style={{ width: `${milestone.progress}%` }}
                       ></div>
                     </div>
+                    <button
+                      onClick={() => handleAddTaskClick(milestone.id)}
+                      className="flex items-center gap-1 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
+                    >
+                      <PlusIcon className="w-4 h-4" />
+                      Add Task
+                    </button>
                   </div>
                 </div>
 
@@ -180,9 +356,18 @@ export default function TimelinePage() {
                             </div>
                             <p className="text-sm text-gray-600 mt-1">{task.description}</p>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium">{task.assignee}</div>
-                            <div className="text-sm text-gray-500">{calculateDaysRemaining(task.endDate)}</div>
+                          <div className="flex items-start gap-4">
+                            <div className="text-right">
+                              <div className="text-sm font-medium">{task.assignee}</div>
+                              <div className="text-sm text-gray-500">{calculateDaysRemaining(task.endDate)}</div>
+                            </div>
+                            <button
+                              onClick={() => handleEditTask(milestone.id, task.id)}
+                              className="p-1 hover:bg-gray-200 rounded"
+                              title="Edit task"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                         <div className="mt-4">
@@ -210,6 +395,147 @@ export default function TimelinePage() {
             ))}
           </div>
         </div>
+        
+        {/* Task Form Modal (for both Add and Edit) */}
+        {showAddTask && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h3 className="text-xl font-semibold">
+                  {isEditMode ? 'Edit Task' : 'Add New Task'}
+                </h3>
+                <button onClick={resetForm} className="p-1 hover:bg-gray-100 rounded">
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Task Name*</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={newTask.name || ''}
+                      onChange={handleTaskInputChange}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Status</label>
+                    <select
+                      name="status"
+                      value={newTask.status || 'pending'}
+                      onChange={handleTaskInputChange}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="blocked">Blocked</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Start Date*</label>
+                    <input
+                      type="date"
+                      name="startDate"
+                      value={newTask.startDate || ''}
+                      onChange={handleTaskInputChange}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">End Date*</label>
+                    <input
+                      type="date"
+                      name="endDate"
+                      value={newTask.endDate || ''}
+                      onChange={handleTaskInputChange}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Assignee</label>
+                    <input
+                      type="text"
+                      name="assignee"
+                      value={newTask.assignee || ''}
+                      onChange={handleTaskInputChange}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Progress (%)</label>
+                    <input
+                      type="number"
+                      name="progress"
+                      min="0"
+                      max="100"
+                      value={newTask.progress || 0}
+                      onChange={handleTaskInputChange}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-1">Dependencies</label>
+                    <select
+                      multiple
+                      name="dependencies"
+                      value={newTask.dependencies || []}
+                      onChange={handleDependencyChange}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      size={4}
+                    >
+                      {availableDependencies.map(dep => (
+                        <option key={dep.id} value={dep.id}>
+                          {dep.name} ({dep.id})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium mb-1">Description</label>
+                    <textarea
+                      name="description"
+                      value={newTask.description || ''}
+                      onChange={handleTaskInputChange}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows={3}
+                    ></textarea>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end gap-2 mt-6">
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    {isEditMode ? 'Update Task' : 'Add Task'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

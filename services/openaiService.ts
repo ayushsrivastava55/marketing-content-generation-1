@@ -77,7 +77,7 @@ export class OpenAIService {
   public async generateContent(request: GenerateContentRequest): Promise<GenerateContentResponse> {
     try {
       const prompt = await this.generatePrompt(request)
-      
+
       const response = await this.openai.chat.completions.create({
         model: AI_CONFIG.model,
         messages: [{ role: "user", content: prompt }],
@@ -129,11 +129,11 @@ export class OpenAIService {
             benefits: parsed.stackRecommendations?.benefits || [],
             migrationComplexity: parsed.stackRecommendations?.migrationComplexity || 'Medium',
             estimatedTimeframe: parsed.stackRecommendations?.estimatedTimeframe || 'Not specified'
+          }
         }
-      }
 
-      return {
-        success: true,
+        return {
+          success: true,
           content: JSON.stringify(normalized, null, 2)
         }
       } catch (e) {
@@ -213,7 +213,7 @@ export class OpenAIService {
     timestamp: number;
   } | null = null;
 
-  private readonly CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+  private readonly CACHE_DURATION = 0; // Disable caching to get fresh trends every time
 
   public async generateTrends(): Promise<TrendData[] | null> {
     // Check cache first
@@ -224,7 +224,8 @@ export class OpenAIService {
 
     try {
       console.log('Generating new trends with OpenAI...');
-      const prompt = `Generate a list of 5 emerging technology trends for 2025.
+      const prompt = `Generate a list of 5 emerging technological trends for 2025 in different categories (AI, Cloud, DevOps, Security, etc.).
+      Focus on innovative technologies that are transforming the digital landscape.
       Return ONLY a JSON object with the following structure:
       {
         "trends": [
@@ -320,70 +321,47 @@ export class OpenAIService {
     }
   }
 
-  public async generateMigrationPlan(profile: any) {
+  public async generateMigrationPlan(prompt: string) {
     try {
-      const prompt = `
-        Analyze this company profile and generate a detailed technology migration plan:
-
-        Company Profile:
-        - Industry: ${profile.industry}
-        - Size: ${profile.size}
-        - Current Technology Stack: ${profile.technologyStack.join(', ')}
-        - Team Expertise: ${profile.teamExpertise.join(', ')}
-        - Business Challenges: ${profile.businessChallenges.join(', ')}
-        - Innovation Priorities: ${profile.innovationPriorities.join(', ')}
-        - Implementation Timeline: ${profile.implementationTimeline}
-        - Budget Range: ${profile.budgetRange}
-
-        Generate a migration plan that includes:
-        1. Recommended technology stack upgrades
-        2. Detailed implementation timeline
-        3. Required effort and resources
-        4. Cost estimates
-        5. Risk assessment
-        6. Team impact analysis
-        7. Step-by-step migration process
-
-        Return the response as a JSON object with this structure:
-        {
-          "currentStack": ["current technologies"],
-          "recommendedStack": ["recommended technologies"],
-          "timeline": "overall timeline",
-          "effort": "effort description",
-          "risks": ["risk1", "risk2"],
-          "benefits": ["benefit1", "benefit2"],
-          "steps": [
-            {
-              "phase": "phase name",
-              "duration": "time estimate",
-              "tasks": ["task1", "task2"],
-              "resources": ["resource1", "resource2"]
-            }
-          ],
-          "costEstimate": {
-            "training": "cost",
-            "tools": "cost",
-            "infrastructure": "cost",
-            "total": "total cost"
-          },
-          "teamImpact": {
-            "requiredSkills": ["skill1", "skill2"],
-            "trainingNeeds": ["training1", "training2"],
-            "teamStructure": "recommended team structure"
-          }
-        }
-      `
-
       const response = await this.openai.chat.completions.create({
         model: AI_CONFIG.model,
         messages: [
           {
             role: "system",
-            content: "You are a technology migration expert who provides detailed, practical migration plans based on company profiles."
+            content: "You are a technology migration expert who creates detailed, practical migration plans."
           },
           {
             role: "user",
-            content: prompt
+            content: `${prompt}
+            
+            Return the response in this JSON format:
+            {
+              "currentStack": ["current tech 1", "current tech 2"],
+              "recommendedStack": ["recommended tech 1", "recommended tech 2"],
+              "timeline": "timeline description",
+              "effort": "effort description",
+              "risks": ["risk 1", "risk 2"],
+              "benefits": ["benefit 1", "benefit 2"],
+              "steps": [
+                {
+                  "phase": "phase name",
+                  "duration": "duration estimate",
+                  "tasks": ["task 1", "task 2"],
+                  "resources": ["resource 1", "resource 2"]
+                }
+              ],
+              "costEstimate": {
+                "training": "cost",
+                "tools": "cost",
+                "infrastructure": "cost",
+                "total": "total cost"
+              },
+              "teamImpact": {
+                "requiredSkills": ["skill 1", "skill 2"],
+                "trainingNeeds": ["training 1", "training 2"],
+                "teamStructure": "team structure recommendation"
+              }
+            }`
           }
         ],
         temperature: 0.7,

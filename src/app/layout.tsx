@@ -30,6 +30,7 @@ export default function RootLayout({
                 <a href="/trends" className="text-text hover:text-primary transition-colors">Trends</a>
                 <a href="/content" className="text-text hover:text-primary transition-colors">Content</a>
                 <a href="/profile" className="text-text hover:text-primary transition-colors">Profile</a>
+                <a href="/migrate" className="text-text hover:text-primary transition-colors">Migrate</a>
               </div>
               <div className="flex items-center space-x-4">
                 <button className="md:hidden">

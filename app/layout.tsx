@@ -29,6 +29,7 @@ export default function RootLayout({
                 <Link href="/trends" className="text-gray-600 hover:text-primary transition-colors">Trends</Link>
                 <Link href="/content" className="text-gray-600 hover:text-primary transition-colors">Content</Link>
                 <Link href="/profile" className="text-gray-600 hover:text-primary transition-colors">Profile</Link>
+                <Link href="/migrate" className="text-gray-600 hover:text-primary transition-colors">Migrate</Link>
               </div>
             </div>
           </div>
