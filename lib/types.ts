@@ -12,12 +12,22 @@ export interface TrendData {
   category: string
   whyUseIt: string[]
   sources: string[]
+  challenges?: string[]
+  futureOutlook?: string
+  keyPlayers?: string[]
   companyAdoptions: Array<{
     name: string
     description: string
     useCase: string
     impact: string
   }>
+  stackRecommendations: {
+    current: string[]
+    recommended: string[]
+    benefits: string[]
+    migrationComplexity: string
+    estimatedTimeframe: string
+  }
 }
 
 export interface TrendAnalysis {

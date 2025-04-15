@@ -494,6 +494,167 @@ export class OpenAIService {
       throw error
     }
   }
+
+  // Finds relevant blog URLs using the Serper Google Search API (No Caching)
+  // Added optional count parameter
+  public async findRelevantBlogs(query: string, count: number = 3): Promise<string[]> {
+    // Ensure count is within reasonable bounds (e.g., 1-10)
+    const numResults = Math.max(1, Math.min(10, count)); 
+    console.log(`Initiating Serper search for ${numResults} blogs related to: "${query}"`);
+    const apiKey = process.env.SERPER_API_KEY;
+
+    if (!apiKey) {
+      console.error('Missing environment variable: SERPER_API_KEY');
+      return []; 
+    }
+
+    try {
+      const response = await fetch('https://google.serper.dev/search', {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          q: `${query} blog post OR article`, 
+          num: numResults // Use the validated count
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Serper API Error: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Serper API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.organic && Array.isArray(data.organic)) {
+        const urls = data.organic
+          .map((item: any) => item.link) 
+          .filter((link: any): link is string => typeof link === 'string' && link.startsWith('http')); 
+        
+        console.log(`Found ${urls.length} relevant URLs via Serper:`, urls);
+        
+        return urls;
+      } else {
+        console.warn('No organic results found in Serper response.', data);
+        return [];
+      }
+
+    } catch (error) {
+      console.error('Error fetching search results from Serper:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
+      return []; // Return empty array on error
+    }
+  }
+
+  // Parses markdown content to extract structured TrendData using AI
+  public async parseMarkdownForTrends(markdownContent: string, originalQuery: string): Promise<TrendData[]> {
+    console.log(`Initiating AI parsing of markdown (length: ${markdownContent.length}) for trends related to: "${originalQuery}"`);
+    
+    const MAX_MARKDOWN_LENGTH = 4000; // Keep aggressive truncation for now
+    if (markdownContent.length > MAX_MARKDOWN_LENGTH) {
+      console.warn(`Markdown content too long (${markdownContent.length}), truncating to ${MAX_MARKDOWN_LENGTH} characters.`);
+      markdownContent = markdownContent.substring(0, MAX_MARKDOWN_LENGTH);
+    }
+
+    try {
+      const prompt = `
+        Analyze the following markdown content scraped from a blog post/article related to "${originalQuery}". 
+        Extract the key technology or marketing trends mentioned. For each trend (up to 4), provide the information in the following JSON format.
+        Be concise but informative. If a field is not explicitly mentioned, estimate it based on the context or use a reasonable default (e.g., 50 for popularity/growth if unknown) or omit it if not applicable (like challenges, keyPlayers).
+
+        Desired JSON structure (return ONLY a valid JSON object with a key "trends" containing an array):
+        {
+          "trends": [
+            {
+              "technology": "(Name of the trend/technology/strategy)",
+              "description": "(Concise but informative summary of the trend based on the text)",
+              "popularity": number between 1-100 (Estimate based on text, or 50 if unknown),
+              "growthRate": number between 1-100 (Estimate based on text, or 50 if unknown),
+              "category": "(Categorize the trend, e.g., AI Marketing, SEO, Cloud, Blockchain, etc.)",
+              "whyUseIt": ["(List 2-3 key benefits or reasons mentioned)"],
+              "challenges": ["(List 1-2 potential challenges or drawbacks mentioned, if any)"],
+              "futureOutlook": "(Briefly summarize the future outlook or potential mentioned, if any)",
+              "keyPlayers": ["(List any specific companies, tools, or key players mentioned, if any)"],
+              "sources": ["(Source from context, e.g., 'Scraped Content')"]
+            }
+          ]
+        }
+
+        Markdown Content:
+        -------------------
+        ${markdownContent}
+        -------------------
+
+        Return ONLY the JSON object.
+      `;
+
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4o", 
+        messages: [
+          {
+            role: "system",
+            content: "You are an AI assistant that extracts structured trend data from markdown text according to a specified JSON format."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.4, 
+        max_tokens: 2000, // Increased max_tokens slightly more for potentially larger output
+        response_format: { type: "json_object" }
+      });
+
+      const content = response.choices[0]?.message?.content;
+
+      if (!content) {
+        console.error('No content received from OpenAI for markdown parsing.');
+        return [];
+      }
+
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed.trends && Array.isArray(parsed.trends)) {
+          const trends: TrendData[] = parsed.trends.map((t: any) => ({ 
+            technology: t.technology || 'Unknown Trend',
+            description: t.description || '',
+            popularity: Math.min(100, Math.max(0, Number(t.popularity) || 50)),
+            growthRate: Math.min(100, Math.max(0, Number(t.growthRate) || 50)),
+            category: t.category || originalQuery || 'Scraped',
+            whyUseIt: Array.isArray(t.whyUseIt) ? t.whyUseIt : [],
+            // Map new optional fields, providing defaults if not present
+            challenges: Array.isArray(t.challenges) ? t.challenges : [],
+            futureOutlook: typeof t.futureOutlook === 'string' ? t.futureOutlook : undefined,
+            keyPlayers: Array.isArray(t.keyPlayers) ? t.keyPlayers : [],
+            sources: Array.isArray(t.sources) ? t.sources : ['Scraped Content'],
+            companyAdoptions: [], // Keep defaults as these are unlikely to be reliably extracted
+            stackRecommendations: { current: [], recommended: [], benefits: [], migrationComplexity: "Unknown", estimatedTimeframe: "N/A" },
+          }));
+          console.log(`Successfully extracted ${trends.length} trends from markdown using gpt-4o.`);
+          return trends;
+        } else {
+          console.error('Invalid JSON format received from OpenAI for markdown parsing:', parsed);
+          return [];
+        }
+      } catch (parseError) {
+        console.error('JSON Parse Error for markdown parsing response:', parseError);
+        console.error('Response content:', content);
+        return [];
+      }
+
+    } catch (error) {
+      console.error('OpenAI API Error during markdown parsing:', error);
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
+      return []; // Return empty array on error
+    }
+  }
 }
 
 export const openaiService = new OpenAIService()
