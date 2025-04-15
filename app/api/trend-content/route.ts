@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { contentGenerator } from '@/services/contentGenerator'
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const trendContent = await contentGenerator.generateTrendContent()
 

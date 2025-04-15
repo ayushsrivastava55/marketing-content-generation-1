@@ -43,7 +43,7 @@ interface Props {
   selectedIndustry: string
 }
 
-const TrendVisualizations: React.FC<Props> = ({ trends, selectedIndustry }) => {
+const TrendVisualizations: React.FC<Props> = ({ trends }) => {
   if (!trends || trends.length === 0) {
     return null
   }

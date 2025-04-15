@@ -29,29 +29,49 @@ export default function TeamPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
     {
       id: '1',
-      name: 'John Doe',
+      name: 'John Smith',
       role: 'Frontend Developer',
-      skills: ['React', 'TypeScript', 'CSS', 'Next.js'],
+      skills: ['React', 'TypeScript', 'Tailwind CSS'],
       trainingProgress: [
-        {
-          course: 'Next.js Advanced',
-          progress: 75,
-          completed: false
-        },
-        {
-          course: 'Cloud Architecture',
-          progress: 100,
-          completed: true
-        }
+        { course: 'Modern React', progress: 100, completed: true },
+        { course: 'Advanced TypeScript', progress: 75, completed: false }
       ],
       availability: 80,
-      projects: ['Migration Planning', 'UI Modernization'],
-      joinDate: '2023-01-15'
+      projects: ['UI Modernization', 'Cloud Migration'],
+      joinDate: '2023-05-15'
     },
-    // Add more team members...
+    {
+      id: '2',
+      name: 'Sarah Johnson',
+      role: 'Backend Engineer',
+      skills: ['Node.js', 'Python', 'PostgreSQL', 'AWS'],
+      trainingProgress: [
+        { course: 'Serverless Architecture', progress: 90, completed: false },
+        { course: 'Database Optimization', progress: 100, completed: true }
+      ],
+      availability: 65,
+      projects: ['Backend Refactoring', 'Migration Planning'],
+      joinDate: '2022-11-02'
+    },
+    {
+      id: '3',
+      name: 'Miguel Rodriguez',
+      role: 'DevOps Engineer',
+      skills: ['Docker', 'Kubernetes', 'CI/CD', 'Terraform'],
+      trainingProgress: [
+        { course: 'Container Orchestration', progress: 100, completed: true },
+        { course: 'Infrastructure as Code', progress: 100, completed: true }
+      ],
+      availability: 70,
+      projects: ['Cloud Migration', 'Security Updates'],
+      joinDate: '2023-03-10'
+    }
   ])
-
+  
+  const [searchQuery, setSearchQuery] = useState('')
   const [showAddMember, setShowAddMember] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<string | null>(null)
+  const [showEditMember, setShowEditMember] = useState(false)
   const [newMember, setNewMember] = useState<AddMemberFormData>({
     name: '',
     role: '',
@@ -59,64 +79,107 @@ export default function TeamPage() {
     projects: []
   })
   const [newSkill, setNewSkill] = useState('')
-  const [selectedMember, setSelectedMember] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
 
   const handleAddMember = () => {
+    // Create new team member
     const member: TeamMember = {
-      id: Date.now().toString(),
-      ...newMember,
+      id: String(Date.now()),
+      name: newMember.name,
+      role: newMember.role,
+      skills: newMember.skills,
       trainingProgress: [],
       availability: 100,
+      projects: newMember.projects,
       joinDate: new Date().toISOString().split('T')[0]
     }
+    
     setTeamMembers(prev => [...prev, member])
-    setShowAddMember(false)
     setNewMember({ name: '', role: '', skills: [], projects: [] })
+    setShowAddMember(false)
   }
-
+  
+  const handleEditMember = () => {
+    if (!selectedMember) return
+    
+    setTeamMembers(prev => prev.map(member => {
+      if (member.id === selectedMember) {
+        return {
+          ...member,
+          name: newMember.name,
+          role: newMember.role,
+          skills: newMember.skills,
+          projects: newMember.projects
+        }
+      }
+      return member
+    }))
+    
+    // Reset form and close modal
+    setNewMember({ name: '', role: '', skills: [], projects: [] })
+    setSelectedMember(null)
+    setShowEditMember(false)
+  }
+  
   const handleDeleteMember = (id: string) => {
     if (confirm('Are you sure you want to remove this team member?')) {
       setTeamMembers(prev => prev.filter(member => member.id !== id))
     }
   }
-
-  const addSkillToMember = (memberId: string, skill: string) => {
-    setTeamMembers(prev => prev.map(member => {
-      if (member.id === memberId && !member.skills.includes(skill)) {
-        return { ...member, skills: [...member.skills, skill] }
-      }
-      return member
-    }))
+  
+  const handleEditClick = (id: string) => {
+    setSelectedMember(id)
+    setShowEditMember(true)
+    // In a real app, you would populate the form with the selected member's data
+    const member = teamMembers.find(m => m.id === id)
+    if (member) {
+      setNewMember({
+        name: member.name,
+        role: member.role,
+        skills: [...member.skills],
+        projects: [...member.projects]
+      })
+    }
   }
-
-  const filteredMembers = teamMembers.filter(member => 
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
-
+  
+  // Filter members based on search query
+  const filteredMembers = teamMembers.filter(member => {
+    const query = searchQuery.toLowerCase()
+    return (
+      member.name.toLowerCase().includes(query) ||
+      member.role.toLowerCase().includes(query) ||
+      member.skills.some(skill => skill.toLowerCase().includes(query))
+    )
+  })
+  
   const calculateTeamStats = () => {
-    const totalMembers = teamMembers.length
-    const skillsMap = new Map<string, number>()
-    let totalProgress = 0
-    let totalCourses = 0
-
+    // Create a map to count skill occurrences
+    const skillCounts = new Map<string, number>()
+    
     teamMembers.forEach(member => {
       member.skills.forEach(skill => {
-        skillsMap.set(skill, (skillsMap.get(skill) || 0) + 1)
+        skillCounts.set(skill, (skillCounts.get(skill) || 0) + 1)
       })
+    })
+    
+    // Sort skills by count and take top 3
+    const topSkills = Array.from(skillCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+    
+    // Calculate average training progress
+    let totalProgress = 0
+    let totalCourses = 0
+    
+    teamMembers.forEach(member => {
       member.trainingProgress.forEach(course => {
         totalProgress += course.progress
         totalCourses++
       })
     })
-
+    
     return {
-      totalMembers,
-      topSkills: Array.from(skillsMap.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5),
+      totalMembers: teamMembers.length,
+      topSkills,
       averageTrainingProgress: totalCourses ? Math.round(totalProgress / totalCourses) : 0
     }
   }
@@ -182,7 +245,7 @@ export default function TeamPage() {
                 </div>
                 <div className="flex gap-2">
                   <button 
-                    onClick={() => setSelectedMember(member.id)}
+                    onClick={() => handleEditClick(member.id)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded"
                   >
                     <PencilIcon className="w-5 h-5" />
@@ -248,21 +311,35 @@ export default function TeamPage() {
           ))}
         </div>
 
-        {/* Add Member Modal */}
-        {showAddMember && (
+        {/* Add/Edit Member Modal */}
+        {(showAddMember || showEditMember) && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg w-full max-w-md">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Add Team Member</h2>
+                <h2 className="text-xl font-bold">{showEditMember ? 'Edit' : 'Add'} Team Member</h2>
                 <button 
-                  onClick={() => setShowAddMember(false)}
+                  onClick={() => {
+                    setShowAddMember(false)
+                    setShowEditMember(false)
+                    setSelectedMember(null)
+                    if (showEditMember) {
+                      setNewMember({ name: '', role: '', skills: [], projects: [] })
+                    }
+                  }}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   ×
                 </button>
               </div>
 
-              <form onSubmit={(e) => { e.preventDefault(); handleAddMember(); }}>
+              <form onSubmit={(e) => { 
+                e.preventDefault(); 
+                if (showEditMember) {
+                  handleEditMember();
+                } else {
+                  handleAddMember();
+                }
+              }}>
                 <div className="space-y-4">
                   {/* Name */}
                   <div>
@@ -366,7 +443,11 @@ export default function TeamPage() {
                 <div className="flex justify-end gap-3 mt-6">
                   <button
                     type="button"
-                    onClick={() => setShowAddMember(false)}
+                    onClick={() => {
+                      setShowAddMember(false)
+                      setShowEditMember(false)
+                      setSelectedMember(null)
+                    }}
                     className="px-4 py-2 border rounded hover:bg-gray-50"
                   >
                     Cancel
@@ -375,7 +456,7 @@ export default function TeamPage() {
                     type="submit"
                     className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
                   >
-                    Add Member
+                    {showEditMember ? 'Update' : 'Add'} Member
                   </button>
                 </div>
               </form>
@@ -385,4 +466,4 @@ export default function TeamPage() {
       </div>
     </div>
   )
-} 
+}

@@ -281,8 +281,25 @@ export class OpenAIService {
           throw new Error('Invalid response format: missing trends array');
         }
 
-        // Validate and normalize each trend
-        const normalizedTrends = parsed.trends.map(trend => ({
+        // Define an interface for the raw trend data from the API
+        interface RawTrendData {
+          technology?: string;
+          description?: string;
+          popularity?: number | string;
+          growthRate?: number | string;
+          category?: string;
+          whyUseIt?: string[];
+          sources?: string[];
+          companyAdoptions?: Array<{
+            name?: string;
+            description?: string;
+            useCase?: string;
+            impact?: string;
+          }>;
+        }
+
+        // Then use this interface in the map function
+        const normalizedTrends = parsed.trends.map((trend: RawTrendData) => ({
           technology: trend.technology || 'Unknown Technology',
           description: trend.description || '',
           popularity: Math.min(100, Math.max(0, Number(trend.popularity) || 0)),
@@ -290,7 +307,12 @@ export class OpenAIService {
           category: trend.category || 'Technology',
           whyUseIt: Array.isArray(trend.whyUseIt) ? trend.whyUseIt : [],
           sources: Array.isArray(trend.sources) ? trend.sources : [],
-          companyAdoptions: Array.isArray(trend.companyAdoptions) ? trend.companyAdoptions.map(adoption => ({
+          companyAdoptions: Array.isArray(trend.companyAdoptions) ? trend.companyAdoptions.map((adoption: { 
+            name?: string; 
+            description?: string; 
+            useCase?: string; 
+            impact?: string;
+          }) => ({
             name: adoption.name || '',
             description: adoption.description || '',
             useCase: adoption.useCase || '',
@@ -435,9 +457,21 @@ export class OpenAIService {
 
       const parsed = JSON.parse(content)
 
-      // Normalize and validate the response
+      // Add a RawRiskData interface
+      interface RawRiskData {
+        id?: string;
+        category: 'technical' | 'operational' | 'security' | 'business';
+        severity: 'low' | 'medium' | 'high' | 'critical';
+        title: string;
+        description: string;
+        impact: string;
+        mitigation: string;
+        status?: 'identified' | 'mitigated' | 'accepted';
+      }
+
+      // Update the map function
       return {
-        risks: parsed.risks.map((risk: any) => ({
+        risks: parsed.risks.map((risk: RawRiskData) => ({
           id: risk.id || Math.random().toString(36).substr(2, 9),
           category: risk.category,
           severity: risk.severity,
@@ -449,9 +483,9 @@ export class OpenAIService {
         })),
         summary: {
           totalRisks: parsed.risks.length,
-          criticalRisks: parsed.risks.filter((r: any) => r.severity === 'critical').length,
-          highRisks: parsed.risks.filter((r: any) => r.severity === 'high').length,
-          mitigatedRisks: parsed.risks.filter((r: any) => r.status === 'mitigated').length
+          criticalRisks: parsed.risks.filter((r: RawRiskData) => r.severity === 'critical').length,
+          highRisks: parsed.risks.filter((r: RawRiskData) => r.severity === 'high').length,
+          mitigatedRisks: parsed.risks.filter((r: RawRiskData) => r.status === 'mitigated').length
         },
         recommendations: parsed.recommendations || []
       }

@@ -174,7 +174,7 @@ class ContentGenerator {
           requirements: profile ? 'Focus on solutions matching company profile and requirements' : undefined
         })
 
-        if (!response.success) {
+        if (!response.success || !response.content) {
           throw new Error(response.error || 'Failed to generate trend')
         }
 
@@ -240,17 +240,17 @@ class ContentGenerator {
           requirements: 'List 5-7 specific, actionable benefits with real-world examples'
         })
 
-        if (!response.success) {
+        if (!response.success || !response.content) {
           console.warn(`Failed to generate benefits for ${trend.technology}:`, response.error)
           return defaultBenefits
         }
 
         const benefits = response.content
           .split('\n')
-          .map(line => line.trim())
-          .filter(line => line.length > 0)
-          .map(line => line.replace(/^[•\-*\d.]\s*/, '').trim())
-          .filter(line => line.length >= 10 && !line.toLowerCase().includes('error'))
+          .map((line: string) => line.trim())
+          .filter((line: string) => line.length > 0)
+          .map((line: string) => line.replace(/^[•\-*\d.]\s*/, '').trim())
+          .filter((line: string) => line.length >= 10 && !line.toLowerCase().includes('error'))
           .slice(0, 7)
 
         return benefits.length > 0 ? benefits : defaultBenefits
@@ -477,35 +477,35 @@ class ContentGenerator {
     const data = JSON.parse(response.content)
     
     // Convert markdown to HTML for the blog body
-    const blogBody = marked.parse(`
+    const blogBody: string = marked.parse(`
 # ${data.technology}
 
 ${data.description}
 
 ## Key Features and Capabilities
 
-${data.technicalDetails.requirements.map(req => `- ${req}`).join('\n')}
+${data.technicalDetails.requirements.map((req: string) => `- ${req}`).join('\n')}
 
 ## Implementation Guide
 
-${data.stackRecommendations.current.map((tech, i) => 
+${data.stackRecommendations.current.map((tech: string, i: number) => 
   `${i + 1}. Replace **${tech}** with **${data.stackRecommendations.recommended[i]}**`
 ).join('\n')}
 
 ## Benefits
 
-${data.stackRecommendations.benefits.map(benefit => `- ${benefit}`).join('\n')}
+${data.stackRecommendations.benefits.map((benefit: string) => `- ${benefit}`).join('\n')}
 
 ## Real-World Impact
 
-${data.companyAdoptions.map(company => `
+${data.companyAdoptions.map((company: CompanyAdoption) => `
 ### ${company.name}
 
 ${company.useCase}
 
 **Impact**: ${company.impact}
 `).join('\n')}
-`)
+`) as string;
 
     return {
       headline: `${data.technology}: The Next Evolution in ${trend}`,

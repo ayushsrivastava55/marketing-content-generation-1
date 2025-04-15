@@ -105,7 +105,7 @@ export default function MigratePage() {
     fetchProfile()
   }, [router])
 
-  const generateMigrationPlan = async (profile: any) => {
+  const generateMigrationPlan = async (profile: CompanyProfile) => {
     setGenerating(true)
     try {
       const response = await fetch('/api/generate-plan', {
@@ -319,7 +319,7 @@ export default function MigratePage() {
           <div className="bg-white rounded-lg shadow-md overflow-hidden p-8 text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Generate Your Migration Plan</h2>
             <p className="text-gray-600 mb-6">
-              Based on your company profile, we'll generate a personalized technology migration plan to help you modernize your stack.
+              Based on your company profile, we&apos;ll generate a personalized technology migration plan to help you modernize your stack.
             </p>
             
             <button
@@ -573,7 +573,7 @@ export default function MigratePage() {
                         <div>
                           <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
                             <svg className="w-5 h-5 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                             </svg>
                             Tasks
                           </h4>
@@ -768,7 +768,7 @@ export default function MigratePage() {
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-base font-medium text-gray-900">How long will the migration take?</h3>
-                    <p className="mt-2 text-gray-600">Based on your company profile and the complexity of the migration, we estimate it will take {migrationPlan.timeline}. This timeline can be adjusted based on your team's availability and priorities.</p>
+                    <p className="mt-2 text-gray-600">Based on your company profile and the complexity of the migration, we estimate it will take {migrationPlan.timeline}. This timeline can be adjusted based on your team&apos;s availability and priorities.</p>
                   </div>
                   
                   <div>
@@ -782,7 +782,7 @@ export default function MigratePage() {
                   </div>
                   
                   <div>
-                    <h3 className="text-base font-medium text-gray-900">What's the ROI for this migration?</h3>
+                    <h3 className="text-base font-medium text-gray-900">What&apos;s the ROI for this migration?</h3>
                     <p className="mt-2 text-gray-600">Based on similar migrations, companies typically see ROI within 12-18 months through improved efficiency, reduced maintenance costs, and enhanced capabilities. The specific benefits for your company include: {migrationPlan.benefits[0]} and {migrationPlan.benefits[1]}.</p>
                   </div>
                 </div>
@@ -969,7 +969,7 @@ export default function MigratePage() {
                     </div>
                     <div className="ml-3 bg-gray-100 rounded-lg py-2 px-3 max-w-[80%]">
                       <p className="text-sm text-gray-800">
-                        Hi there! I'm your migration assistant. How can I help you with your migration plan today?
+                        Hi there! I&apos;m your migration assistant. How can I help you with your migration plan today?
                       </p>
                     </div>
                   </div>
@@ -1051,7 +1051,7 @@ export default function MigratePage() {
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
-                      onClick={() => handleQuickQuestion("What's the first step in the migration?")}
+                      onClick={() => handleQuickQuestion("What&apos;s the first step in the migration?")}
                       className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 px-2 py-1 rounded-full"
                     >
                       First step?

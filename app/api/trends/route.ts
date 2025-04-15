@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
 import { openaiService } from '@/services/openaiService'
 
 // Fallback trends data in case OpenAI fails
@@ -48,7 +47,7 @@ const fallbackTrends = [
   }
 ]
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     console.log('Starting trends fetch...');
     const trends = await openaiService.generateTrends();

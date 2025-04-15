@@ -9,7 +9,6 @@ import {
   ChartBarIcon, 
   BookmarkIcon, 
   FunnelIcon,
-  AdjustmentsHorizontalIcon,
   PlusIcon, 
   BookOpenIcon, 
   CheckIcon

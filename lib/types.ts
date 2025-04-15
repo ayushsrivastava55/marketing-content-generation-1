@@ -1,5 +1,3 @@
-import type { ChatCompletion } from 'openai'
-
 export interface AIResponse {
   success: boolean
   content?: string
@@ -22,8 +20,54 @@ export interface TrendData {
   }>
 }
 
+export interface TrendAnalysis {
+  technology: string
+  analysis: {
+    marketPotential: 'high' | 'medium' | 'low'
+    implementationComplexity: 'high' | 'medium' | 'low'
+    industryImpact: string
+    opportunities: string[]
+    challenges: string[]
+    recommendation: string
+  }
+}
+
 export interface AIConfig {
   model: string
   temperature: number
   maxTokens: number
+}
+
+export interface GenerateContentRequest {
+  trend: string
+  context: string
+  format: 'text' | 'json'
+  industry: string
+  requirements?: string
+}
+
+export interface GenerateContentResponse {
+  success: boolean
+  content?: string
+  error?: string
+}
+
+export interface RiskAnalysis {
+  risks: Array<{
+    id: string
+    category: 'technical' | 'operational' | 'security' | 'business'
+    severity: 'low' | 'medium' | 'high' | 'critical'
+    title: string
+    description: string
+    impact: string
+    mitigation: string
+    status: 'identified' | 'mitigated' | 'accepted'
+  }>
+  summary: {
+    totalRisks: number
+    criticalRisks: number
+    highRisks: number
+    mitigatedRisks: number
+  }
+  recommendations: string[]
 } 

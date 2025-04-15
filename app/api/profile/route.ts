@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
 // Interface to match Prisma's model
-interface CompanyProfileData {
+export interface CompanyProfile {
   id?: string
   name: string
   industry: string
@@ -13,7 +13,12 @@ interface CompanyProfileData {
   innovationPriorities: string
   implementationTimeline: string
   budgetRange: string
+  createdAt?: Date
+  updatedAt?: Date
 }
+
+// Type for JSON stringified array fields
+type JsonArray = string
 
 export async function GET() {
   try {
@@ -67,8 +72,7 @@ export async function POST(request: Request) {
       const businessChallenges = JSON.stringify(data.businessChallenges || []);
       const innovationPriorities = JSON.stringify(data.innovationPriorities || []);
       
-      // Use raw query to bypass Prisma's type checking if needed
-      // or use explicit Prisma typing with 'as any' for specific fields
+      // Use proper typing for the fields
       const profile = await prisma.companyProfile.upsert({
         where: {
           id: data.id || 'default'
@@ -77,10 +81,10 @@ export async function POST(request: Request) {
           name: data.name,
           industry: data.industry,
           size: data.size,
-          technologyStack: technologyStack as any,
-          teamExpertise: teamExpertise as any,
-          businessChallenges: businessChallenges as any,
-          innovationPriorities: innovationPriorities as any,
+          technologyStack: technologyStack as JsonArray,
+          teamExpertise: teamExpertise as JsonArray,
+          businessChallenges: businessChallenges as JsonArray,
+          innovationPriorities: innovationPriorities as JsonArray,
           implementationTimeline: data.implementationTimeline,
           budgetRange: data.budgetRange,
           updatedAt: new Date()
@@ -90,10 +94,10 @@ export async function POST(request: Request) {
           name: data.name,
           industry: data.industry,
           size: data.size,
-          technologyStack: technologyStack as any,
-          teamExpertise: teamExpertise as any,
-          businessChallenges: businessChallenges as any,
-          innovationPriorities: innovationPriorities as any,
+          technologyStack: technologyStack as JsonArray,
+          teamExpertise: teamExpertise as JsonArray,
+          businessChallenges: businessChallenges as JsonArray,
+          innovationPriorities: innovationPriorities as JsonArray,
           implementationTimeline: data.implementationTimeline,
           budgetRange: data.budgetRange,
           createdAt: new Date(),
@@ -102,17 +106,17 @@ export async function POST(request: Request) {
       })
       
       return NextResponse.json(profile)
-    } catch (prismaError: any) {
+    } catch (prismaError: unknown) {
       console.error('Prisma error:', prismaError)
       return NextResponse.json(
-        { error: 'Database error', details: prismaError.message },
+        { error: 'Database error', details: (prismaError as Error).message || 'Unknown database error' },
         { status: 500 }
       )
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error saving profile:', error)
     return NextResponse.json(
-      { error: 'Failed to save profile', details: error.message },
+      { error: 'Failed to save profile', details: (error as Error).message || 'Unknown error' },
       { status: 500 }
     )
   }

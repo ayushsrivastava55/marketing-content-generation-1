@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ExclamationTriangleIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 
@@ -32,11 +32,7 @@ export default function RiskAssessmentPage() {
   const [error, setError] = useState<string | null>(null)
   const [riskAnalysis, setRiskAnalysis] = useState<RiskAnalysis | null>(null)
 
-  useEffect(() => {
-    fetchRiskAnalysis()
-  }, [])
-
-  const fetchRiskAnalysis = async () => {
+  const fetchRiskAnalysis = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -59,7 +55,11 @@ export default function RiskAssessmentPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    fetchRiskAnalysis()
+  }, [fetchRiskAnalysis])
 
   const getSeverityColor = (severity: Risk['severity']) => {
     switch (severity) {

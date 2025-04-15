@@ -2,9 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Chart } from 'react-chartjs-2'
 import {
-  Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
@@ -13,9 +11,11 @@ import {
   Title,
   Tooltip,
   Legend,
+  Chart
 } from 'chart.js'
 
-ChartJS.register(
+// Register Chart.js components
+Chart.register(
   CategoryScale,
   LinearScale,
   PointElement,
@@ -36,7 +36,7 @@ interface DashboardMetrics {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
+  const [metrics] = useState<DashboardMetrics>({
     techAdoptionRate: 65,
     migrationProgress: 45,
     teamReadiness: 80,
